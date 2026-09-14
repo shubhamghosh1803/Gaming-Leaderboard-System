@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { Modal } from './Modal';
 import { User, Shield, Trophy, Mail, Calendar, DollarSign, Award } from 'lucide-react';
 
@@ -55,8 +55,10 @@ export function PlayerDetailModal({ isOpen, onClose, player }) {
           </div>
 
           <div className="detail-item">
-            <span className="detail-label">Date of Birth</span>
-            <div className="detail-val">{player.DOB}</div>
+            <span className="detail-label">Date of Birth & Age</span>
+            <div className="detail-val">
+              {player.DOB} {player.Age != null ? `(${player.Age} yrs)` : ''}
+            </div>
           </div>
 
           <div className="detail-item">

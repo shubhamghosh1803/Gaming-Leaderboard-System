@@ -154,7 +154,9 @@ export function Players() {
       render: (row) => (
         <div>
           <div style={{ color: '#fff', fontWeight: 500 }}>{row.FullName}</div>
-          <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>Born: {row.DOB}</div>
+          <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
+            DOB: {row.DOB} {row.Age != null ? `(Age: ${row.Age})` : ''}
+          </div>
         </div>
       )
     },

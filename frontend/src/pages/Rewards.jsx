@@ -1,16 +1,25 @@
-import React from 'react';
-import { Gift, Calendar, UserCheck } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Gift, Calendar } from 'lucide-react';
 import { DataTable } from '../components/DataTable';
-import { initialRewards, initialAccounts } from '../data/mockData';
+import { rewardsApi } from '../api/rewardsApi';
 
 export function Rewards() {
-  const enrichedRewards = initialRewards.map(r => {
-    const acc = initialAccounts.find(a => a.Acc_ID === r.Acc_ID);
-    return {
-      ...r,
-      account_email: acc ? acc.Email : `Account #${r.Acc_ID}`
-    };
-  });
+  const [rewards, setRewards] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const data = await rewardsApi.getAll();
+        setRewards(data);
+      } catch (err) {
+        console.error('Failed to load rewards:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadData();
+  }, []);
 
   const columns = [
     {
@@ -20,7 +29,7 @@ export function Rewards() {
       render: (row) => <strong style={{ fontFamily: 'var(--font-mono)' }}>#{row.Reward_ID}</strong>
     },
     {
-      header: 'Reward Type / Item',
+      header: 'Reward Type / Item (R_Type)',
       accessor: 'R_Type',
       render: (row) => (
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
@@ -30,7 +39,7 @@ export function Rewards() {
       )
     },
     {
-      header: 'Claim Expiry Date',
+      header: 'Claim Expiry Date (ExpiryDate)',
       accessor: 'ExpiryDate',
       render: (row) => (
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: 'var(--text-muted)' }}>
@@ -40,7 +49,7 @@ export function Rewards() {
       )
     },
     {
-      header: 'Recipient Account',
+      header: 'Recipient Account (Acc_ID)',
       accessor: 'account_email',
       render: (row) => (
         <span style={{ color: 'var(--accent-cyan)' }}>
@@ -55,14 +64,14 @@ export function Rewards() {
       <div className="page-header">
         <div className="page-title">
           <h2>Reward Inventory</h2>
-          <p>Exclusive player rewards, cosmetic unlocks, seasonal credits, and claim dates</p>
+          <p>Exclusive player rewards, cosmetic unlocks, seasonal credits, and claim dates (Reward Relation)</p>
         </div>
       </div>
 
       <DataTable
         columns={columns}
-        data={enrichedRewards}
-        loading={false}
+        data={rewards}
+        loading={loading}
         emptyMessage="No rewards currently active."
       />
     </div>

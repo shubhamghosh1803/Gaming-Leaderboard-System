@@ -1,26 +1,31 @@
-import React from 'react';
-import { Award, Gift, Star } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Award, Gift } from 'lucide-react';
 import { DataTable } from '../components/DataTable';
-import { initialPlayerAchievements, initialPlayers, initialRewards } from '../data/mockData';
+import { achievementsApi } from '../api/achievementsApi';
 
 export function Achievements() {
-  const enrichedAchievements = initialPlayerAchievements.map(a => {
-    const p = initialPlayers.find(pl => pl.Player_ID === a.Player_ID);
-    const r = initialRewards.find(rw => rw.Reward_ID === a.Reward_ID);
-    return {
-      ...a,
-      player_tag: p ? p.Code : `Player #${a.Player_ID}`,
-      player_name: p ? p.FullName : 'N/A',
-      reward_name: r ? r.R_Type : 'N/A',
-      reward_expiry: r ? r.ExpiryDate : 'N/A'
-    };
-  });
+  const [achievements, setAchievements] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const data = await achievementsApi.getAll();
+        setAchievements(data);
+      } catch (err) {
+        console.error('Failed to load achievements:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadData();
+  }, []);
 
   const columns = [
     {
-      header: 'ID',
+      header: 'ID (Ach_ID)',
       accessor: 'Ach_ID',
-      width: '75px',
+      width: '85px',
       render: (row) => <strong style={{ fontFamily: 'var(--font-mono)' }}>#{row.Ach_ID}</strong>
     },
     {
@@ -43,7 +48,7 @@ export function Achievements() {
       )
     },
     {
-      header: 'Unlocked By',
+      header: 'Unlocked By (Player_ID)',
       accessor: 'player_tag',
       render: (row) => (
         <div>
@@ -53,7 +58,7 @@ export function Achievements() {
       )
     },
     {
-      header: 'Reward Item',
+      header: 'Reward Item (Reward_ID)',
       accessor: 'reward_name',
       render: (row) => (
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
@@ -69,14 +74,14 @@ export function Achievements() {
       <div className="page-header">
         <div className="page-title">
           <h2>Player Achievements</h2>
-          <p>Unlocked achievement milestones, leaderboard points, and associated item rewards</p>
+          <p>Unlocked achievement milestones, leaderboard points, and associated item rewards (Player_Achievement Relation)</p>
         </div>
       </div>
 
       <DataTable
         columns={columns}
-        data={enrichedAchievements}
-        loading={false}
+        data={achievements}
+        loading={loading}
         emptyMessage="No player achievements recorded."
       />
     </div>

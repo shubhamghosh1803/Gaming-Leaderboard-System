@@ -1,4 +1,4 @@
-import { request, USE_MOCK } from './client';
+﻿import { request, USE_MOCK } from './client';
 import {
   initialPlayers,
   initialCasualPlayers,
@@ -9,7 +9,6 @@ import {
   initialTeams
 } from '../data/mockData';
 
-// Storage keys for persistent mock state
 const STORAGE_KEY_PLAYERS = 'gaming_db_players';
 const STORAGE_KEY_CASUAL = 'gaming_db_casual';
 const STORAGE_KEY_COMPETITIVE = 'gaming_db_competitive';
@@ -31,12 +30,25 @@ function setLocal(key, val) {
   } catch {}
 }
 
-// In-memory mock store
 let mockPlayers = getLocal(STORAGE_KEY_PLAYERS, initialPlayers);
 let mockCasual = getLocal(STORAGE_KEY_CASUAL, initialCasualPlayers);
 let mockCompetitive = getLocal(STORAGE_KEY_COMPETITIVE, initialCompetitivePlayers);
 let mockPro = getLocal(STORAGE_KEY_PRO, initialProfessionalPlayers);
 let mockEmails = getLocal(STORAGE_KEY_EMAILS, initialPlayerEmails);
+
+// Derived attribute: Age calculated dynamically from DOB (DA1 ER dashed oval)
+export function calculateAge(dobString) {
+  if (!dobString) return null;
+  const birthDate = new Date(dobString);
+  if (isNaN(birthDate.getTime())) return null;
+  const today = new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const m = today.getMonth() - birthDate.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+  return age >= 0 ? age : null;
+}
 
 function enrichPlayer(p) {
   const account = initialAccounts.find(a => a.Acc_ID === p.Acc_ID);
@@ -67,6 +79,7 @@ function enrichPlayer(p) {
   return {
     ...p,
     FullName: [p.First, p.Middle, p.Last].filter(Boolean).join(' '),
+    Age: calculateAge(p.DOB),
     Account_Email: account ? account.Email : 'N/A',
     Emails: emails,
     PlayerType: playerType,
@@ -77,8 +90,7 @@ function enrichPlayer(p) {
 export const playerApi = {
   async getAll() {
     if (USE_MOCK) {
-      // Simulate network delay
-      await new Promise(r => setTimeout(r, 120));
+      await new Promise(r => setTimeout(r, 80));
       return mockPlayers.map(enrichPlayer);
     }
     return request('/players');
@@ -87,7 +99,7 @@ export const playerApi = {
   async getById(id) {
     const numId = Number(id);
     if (USE_MOCK) {
-      await new Promise(r => setTimeout(r, 80));
+      await new Promise(r => setTimeout(r, 60));
       const p = mockPlayers.find(pl => pl.Player_ID === numId);
       if (!p) throw new Error(`Player with ID ${id} not found.`);
       return enrichPlayer(p);
@@ -97,10 +109,9 @@ export const playerApi = {
 
   async create(data) {
     if (USE_MOCK) {
-      await new Promise(r => setTimeout(r, 150));
+      await new Promise(r => setTimeout(r, 120));
       const newId = Number(data.Player_ID) || (Math.max(0, ...mockPlayers.map(p => p.Player_ID)) + 1);
       
-      // Check for PK collision
       if (mockPlayers.some(p => p.Player_ID === newId)) {
         throw new Error(`Primary Key Violation: Player_ID ${newId} already exists in database.`);
       }
@@ -119,7 +130,6 @@ export const playerApi = {
       mockPlayers.push(newPlayer);
       setLocal(STORAGE_KEY_PLAYERS, mockPlayers);
 
-      // Handle specialization sub-tables
       if (data.PlayerType === 'Casual' && data.Pref_score != null) {
         mockCasual.push({ Player_ID: newId, Pref_score: Number(data.Pref_score) });
         setLocal(STORAGE_KEY_CASUAL, mockCasual);
@@ -135,7 +145,6 @@ export const playerApi = {
         setLocal(STORAGE_KEY_PRO, mockPro);
       }
 
-      // Handle emails if provided
       if (data.Email) {
         mockEmails.push({ Player_ID: newId, Email: String(data.Email).trim() });
         setLocal(STORAGE_KEY_EMAILS, mockEmails);
@@ -153,13 +162,12 @@ export const playerApi = {
   async update(id, data) {
     const numId = Number(id);
     if (USE_MOCK) {
-      await new Promise(r => setTimeout(r, 150));
+      await new Promise(r => setTimeout(r, 120));
       const idx = mockPlayers.findIndex(p => p.Player_ID === numId);
       if (idx === -1) {
         throw new Error(`Player #${id} not found.`);
       }
 
-      // Preserve primary key integrity: Player_ID cannot be mutated
       mockPlayers[idx] = {
         ...mockPlayers[idx],
         Code: data.Code != null ? String(data.Code).trim() : mockPlayers[idx].Code,
@@ -172,7 +180,6 @@ export const playerApi = {
       };
       setLocal(STORAGE_KEY_PLAYERS, mockPlayers);
 
-      // Update specialization
       if (data.PlayerType === 'Casual') {
         mockCasual = mockCasual.filter(c => c.Player_ID !== numId);
         mockCompetitive = mockCompetitive.filter(c => c.Player_ID !== numId);
@@ -210,7 +217,7 @@ export const playerApi = {
   async delete(id) {
     const numId = Number(id);
     if (USE_MOCK) {
-      await new Promise(r => setTimeout(r, 120));
+      await new Promise(r => setTimeout(r, 100));
       const idx = mockPlayers.findIndex(p => p.Player_ID === numId);
       if (idx === -1) {
         throw new Error(`Cannot delete: Player #${id} not found.`);

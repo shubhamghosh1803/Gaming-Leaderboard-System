@@ -1,18 +1,35 @@
-import React from 'react';
-import { Monitor, Cpu, Calendar } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Monitor } from 'lucide-react';
 import { DataTable } from '../components/DataTable';
-import { initialPlatforms } from '../data/mockData';
+import { platformsApi } from '../api/platformsApi';
 
 export function Platforms() {
+  const [platforms, setPlatforms] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const data = await platformsApi.getAll();
+        setPlatforms(data);
+      } catch (err) {
+        console.error('Failed to load platforms:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadData();
+  }, []);
+
   const columns = [
     {
-      header: 'Platform ID',
+      header: 'Platform ID (Pla_ID)',
       accessor: 'Pla_ID',
-      width: '90px',
+      width: '100px',
       render: (row) => <strong style={{ fontFamily: 'var(--font-mono)' }}>#{row.Pla_ID}</strong>
     },
     {
-      header: 'Platform Name',
+      header: 'Platform Name (Name)',
       accessor: 'Name',
       render: (row) => (
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
@@ -27,7 +44,7 @@ export function Platforms() {
       render: (row) => <span style={{ color: 'var(--text-secondary)' }}>{row.Manufacturer}</span>
     },
     {
-      header: 'Release Year',
+      header: 'Release Year (Release_y)',
       accessor: 'Release_y',
       render: (row) => (
         <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>
@@ -42,14 +59,14 @@ export function Platforms() {
       <div className="page-header">
         <div className="page-title">
           <h2>Gaming Platforms</h2>
-          <p>Supported hardware platforms, operating systems, and console architectures</p>
+          <p>Supported hardware platforms, operating systems, and console architectures (Platform Relation)</p>
         </div>
       </div>
 
       <DataTable
         columns={columns}
-        data={initialPlatforms}
-        loading={false}
+        data={platforms}
+        loading={loading}
         emptyMessage="No platforms recorded."
       />
     </div>

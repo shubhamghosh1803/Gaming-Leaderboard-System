@@ -1,8 +1,8 @@
-// API Client configuration
-// Allows seamless switching between Mock Mode (for standalone frontend testing)
-// and Live Backend Mode (when teammate deploys MySQL/ODBC REST API).
+﻿// API Client configuration
+// Connects to FastAPI Backend via REST endpoints.
+// When backend is not reachable, gracefully uses isolated mock data.
 
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000/api';
 export const USE_MOCK = import.meta.env.VITE_USE_MOCK !== 'false';
 
 export async function request(endpoint, options = {}) {
@@ -19,7 +19,7 @@ export async function request(endpoint, options = {}) {
     const res = await fetch(url, config);
     if (!res.ok) {
       const errorData = await res.json().catch(() => ({}));
-      throw new Error(errorData.message || `HTTP Error ${res.status}: ${res.statusText}`);
+      throw new Error(errorData.detail || errorData.message || `HTTP ${res.status}: ${res.statusText}`);
     }
     return await res.json();
   } catch (err) {
