@@ -20,13 +20,19 @@ function setLocal(key, val) {
 
 let mockTeams = getLocal(STORAGE_KEY, initialTeams);
 
+function refreshTeams() {
+  const saved = getLocal(STORAGE_KEY, initialTeams);
+  mockTeams = saved;
+}
+
 function enrichTeam(t) {
-  const proSignings = initialProfessionalPlayers.filter(pr => pr.Team_ID === t.Team_ID);
+  const proSignings = getLocal('gaming_db_pro', initialProfessionalPlayers).filter(pr => pr.Team_ID === t.Team_ID);
   const roster = proSignings.map(pr => {
-    const p = initialPlayers.find(pl => pl.Player_ID === pr.Player_ID);
+    const players = getLocal('gaming_db_players', initialPlayers);
+    const p = players.find(pl => pl.Player_ID === pr.Player_ID);
     return {
       Player_ID: pr.Player_ID,
-      name: p ? p.FullName : `Player #${pr.Player_ID}`,
+      name: p ? `${p.First} ${p.Last}`.trim() : `Player #${pr.Player_ID}`,
       code: p ? p.Code : `P#${pr.Player_ID}`,
       salary: pr.Salary
     };
@@ -39,24 +45,40 @@ function enrichTeam(t) {
   };
 }
 
+function enrichBackendTeam(team, players) {
+  const roster = players
+    .filter(player => player.Team_ID === team.Team_ID && player.player_rank == null && player.professional_score == null)
+    .map(player => ({
+      Player_ID: player.Player_ID,
+      code: player.Code,
+      name: player.FullName,
+      salary: player.salary
+    }));
+  return { ...team, roster };
+}
+
 export const teamsApi = {
   async getAll() {
     if (USE_MOCK) {
       await new Promise(r => setTimeout(r, 80));
+      refreshTeams();
       return mockTeams.map(enrichTeam);
     }
-    return request('/teams');
+    const [teams, players] = await Promise.all([request('/teams'), request('/players')]);
+    return teams.map(team => enrichBackendTeam(team, players));
   },
 
   async getById(id) {
     const numId = Number(id);
     if (USE_MOCK) {
       await new Promise(r => setTimeout(r, 60));
+      refreshTeams();
       const t = mockTeams.find(item => item.Team_ID === numId);
       if (!t) throw new Error(`Team #${id} not found.`);
       return enrichTeam(t);
     }
-    return request(`/teams/${numId}`);
+    const [team, players] = await Promise.all([request(`/teams/${numId}`), request('/players')]);
+    return enrichBackendTeam(team, players);
   },
 
   async create(data) {
@@ -81,7 +103,15 @@ export const teamsApi = {
     }
     return request('/teams', {
       method: 'POST',
-      body: JSON.stringify(data)
+      body: JSON.stringify({
+        team_id: data.Team_ID != null ? Number(data.Team_ID) : null,
+        tag: data.Tag,
+        team_name: data.Name,
+        state: data.State || null,
+        city: data.City || null,
+        street: data.Street || null,
+        country_code: data.Country_Code || data.Country
+      })
     });
   },
 
@@ -105,7 +135,16 @@ export const teamsApi = {
     }
     return request(`/teams/${numId}`, {
       method: 'PUT',
-      body: JSON.stringify(data)
+      body: JSON.stringify({
+        ...(data.Tag != null && { tag: data.Tag }),
+        ...(data.Name != null && { team_name: data.Name }),
+        ...(data.State != null && { state: data.State }),
+        ...(data.City != null && { city: data.City }),
+        ...(data.Street != null && { street: data.Street }),
+        ...((data.Country_Code != null || data.Country != null) && {
+          country_code: data.Country_Code || data.Country
+        })
+      })
     });
   },
 

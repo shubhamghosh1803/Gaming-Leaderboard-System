@@ -44,7 +44,16 @@ export const matchesApi = {
       await new Promise(r => setTimeout(r, 80));
       return mockMatches.map(enrichMatch);
     }
-    return request('/matches');
+    const matches = await request('/matches');
+    return matches.map(match => ({
+      ...match,
+      Match_ID: match.match_id,
+      Status: match.status,
+      Score: match.score,
+      Duration: match.duration,
+      Result: match.result,
+      Total_M: match.total_matches
+    }));
   },
 
   async getById(id) {
@@ -79,7 +88,14 @@ export const matchesApi = {
     }
     return request('/matches', {
       method: 'POST',
-      body: JSON.stringify(data)
+      body: JSON.stringify({
+        match_id: data.Match_ID != null ? Number(data.Match_ID) : null,
+        status: data.Status,
+        score: data.Score != null ? String(data.Score) : null,
+        duration: data.Duration != null ? Number(data.Duration) : null,
+        result: data.Result || null,
+        total_matches: data.Total_M != null ? Number(data.Total_M) : null
+      })
     });
   },
 
@@ -102,7 +118,13 @@ export const matchesApi = {
     }
     return request(`/matches/${numId}`, {
       method: 'PUT',
-      body: JSON.stringify(data)
+      body: JSON.stringify({
+        ...(data.Status != null && { status: data.Status }),
+        ...(data.Score != null && { score: String(data.Score) }),
+        ...(data.Duration != null && { duration: Number(data.Duration) }),
+        ...(data.Result != null && { result: data.Result }),
+        ...(data.Total_M != null && { total_matches: Number(data.Total_M) })
+      })
     });
   },
 

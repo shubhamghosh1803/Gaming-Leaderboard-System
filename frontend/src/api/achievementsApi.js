@@ -38,7 +38,17 @@ export const achievementsApi = {
       await new Promise(r => setTimeout(r, 80));
       return mockAchievements.map(enrichAchievement);
     }
-    return request('/achievements');
+    const achievements = await request('/achievements');
+    return achievements.map(achievement => ({
+      ...achievement,
+      Ach_ID: achievement.ach_id,
+      Category: achievement.category,
+      Points: achievement.points,
+      Player_ID: achievement.player_id,
+      Reward_ID: achievement.reward_id,
+      Player_Code: achievement.player_tag,
+      Reward_Type: achievement.reward_name
+    }));
   },
 
   async getById(id) {

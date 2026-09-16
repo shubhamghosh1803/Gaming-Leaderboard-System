@@ -84,6 +84,15 @@ export function PlayerForm({ isOpen, onClose, onSubmit, initialData = null, mode
     if (!formData.First?.trim()) newErrors.First = 'First name is required.';
     if (!formData.Last?.trim()) newErrors.Last = 'Last name is required.';
     if (!formData.DOB) newErrors.DOB = 'Date of birth is required.';
+    if (!formData.Acc_ID || isNaN(Number(formData.Acc_ID)) || Number(formData.Acc_ID) <= 0) {
+      newErrors.Acc_ID = 'Linked account ID is required.';
+    }
+
+    const customAccountId = Number(formData.Acc_ID);
+    const isCustomAccount = !Number.isNaN(customAccountId) && !initialAccounts.some(acc => acc.Acc_ID === customAccountId);
+    if (isCustomAccount && !formData.Email?.trim()) {
+      newErrors.Email = 'Account email is required for a custom linked account.';
+    }
 
     if (formData.PlayerType === 'Casual') {
       if (formData.Pref_score === '' || isNaN(Number(formData.Pref_score))) {
@@ -237,19 +246,22 @@ export function PlayerForm({ isOpen, onClose, onSubmit, initialData = null, mode
             </div>
 
             <div className="form-group">
-              <label>Linked Account *</label>
-              <select 
-                name="Acc_ID" 
-                className="form-select" 
-                value={formData.Acc_ID} 
+              <label>Linked Account ID *</label>
+              <input
+                type="number"
+                name="Acc_ID"
+                className="form-input"
+                value={formData.Acc_ID}
                 onChange={handleChange}
-              >
+                list="account-id-options"
+                placeholder="e.g. 999"
+              />
+              <datalist id="account-id-options">
                 {initialAccounts.map(acc => (
-                  <option key={acc.Acc_ID} value={acc.Acc_ID}>
-                    Account #{acc.Acc_ID} ({acc.Email})
-                  </option>
+                  <option key={acc.Acc_ID} value={acc.Acc_ID} label={`Account #${acc.Acc_ID} (${acc.Email})`} />
                 ))}
-              </select>
+              </datalist>
+              {errors.Acc_ID && <span className="field-error">{errors.Acc_ID}</span>}
             </div>
 
             <div className="form-group full-width" style={{ marginTop: '0.25rem' }}>
@@ -302,19 +314,22 @@ export function PlayerForm({ isOpen, onClose, onSubmit, initialData = null, mode
             {formData.PlayerType === 'Professional' && (
               <>
                 <div className="form-group">
-                  <label>Team Roster *</label>
-                  <select 
-                    name="Team_ID" 
-                    className="form-select" 
-                    value={formData.Team_ID} 
+                  <label>Team ID *</label>
+                  <input
+                    type="number"
+                    name="Team_ID"
+                    className="form-input"
+                    value={formData.Team_ID}
                     onChange={handleChange}
-                  >
+                    list="team-id-options"
+                    placeholder="e.g. 900"
+                  />
+                  <datalist id="team-id-options">
                     {initialTeams.map(t => (
-                      <option key={t.Team_ID} value={t.Team_ID}>
-                        [{t.Tag}] {t.Name}
-                      </option>
+                      <option key={t.Team_ID} value={t.Team_ID} label={`[${t.Tag}] ${t.Name}`} />
                     ))}
-                  </select>
+                  </datalist>
+                  {errors.Team_ID && <span className="field-error">{errors.Team_ID}</span>}
                 </div>
                 <div className="form-group">
                   <label>Salary ($) *</label>
@@ -333,15 +348,16 @@ export function PlayerForm({ isOpen, onClose, onSubmit, initialData = null, mode
             )}
 
             <div className="form-group full-width">
-              <label>Contact Email</label>
+              <label>Account Email</label>
               <input
                 type="email"
                 name="Email"
                 className="form-input"
                 value={formData.Email}
                 onChange={handleChange}
-                placeholder="player@gaming.gg"
+                placeholder="your.email@example.com"
               />
+              {errors.Email && <span className="field-error">{errors.Email}</span>}
             </div>
           </div>
         </div>

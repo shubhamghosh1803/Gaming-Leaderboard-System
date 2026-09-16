@@ -34,7 +34,14 @@ export const rewardsApi = {
       await new Promise(r => setTimeout(r, 80));
       return mockRewards.map(enrichReward);
     }
-    return request('/rewards');
+    const rewards = await request('/rewards');
+    return rewards.map(reward => ({
+      ...reward,
+      Reward_ID: reward.Reward_ID ?? reward.reward_id,
+      R_Type: reward.R_Type ?? reward.rtype,
+      ExpiryDate: reward.ExpiryDate ?? reward.expiry_date,
+      Acc_ID: reward.Acc_ID ?? reward.acc_id
+    }));
   },
 
   async getById(id) {
@@ -45,6 +52,13 @@ export const rewardsApi = {
       if (!rItem) throw new Error(`Reward #${id} not found.`);
       return enrichReward(rItem);
     }
-    return request(`/rewards/${numId}`);
+    const reward = await request(`/rewards/${numId}`);
+    return {
+      ...reward,
+      Reward_ID: reward.Reward_ID ?? reward.reward_id,
+      R_Type: reward.R_Type ?? reward.rtype,
+      ExpiryDate: reward.ExpiryDate ?? reward.expiry_date,
+      Acc_ID: reward.Acc_ID ?? reward.acc_id
+    };
   }
 };

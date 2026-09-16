@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Swords, Plus, Edit2, Trash2, CheckCircle2, AlertCircle, Clock } from 'lucide-react';
+import { Swords, Plus, Edit2, Trash2, CheckCircle2, AlertCircle, Clock, BarChart3 } from 'lucide-react';
 import { DataTable } from '../components/DataTable';
 import { MatchForm } from '../components/MatchForm';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { matchesApi } from '../api/matchesApi';
+import { matchStatsApi } from '../api/matchStatsApi';
+import { MatchPerformanceForm } from '../components/MatchPerformanceForm';
 
 export function Matches() {
   const [matches, setMatches] = useState([]);
@@ -18,6 +20,8 @@ export function Matches() {
   const [deleteLoading, setDeleteLoading] = useState(false);
 
   const [notification, setNotification] = useState(null);
+  const [isPerformanceOpen, setIsPerformanceOpen] = useState(false);
+  const [performanceMatchId, setPerformanceMatchId] = useState('');
 
   const showNotice = (type, message) => {
     setNotification({ type, message });
@@ -44,6 +48,11 @@ export function Matches() {
     setSelectedMatch(null);
     setFormMode('add');
     setIsFormOpen(true);
+  };
+
+  const handlePerformanceSubmit = async (formData) => {
+    await matchStatsApi.create(formData);
+    showNotice('success', 'Player performance saved. Leaderboard rankings will update.');
   };
 
   const handleOpenEdit = (m) => {
@@ -176,10 +185,14 @@ export function Matches() {
           <p>Official match records, scores, duration, and participant counts (Match Relation)</p>
         </div>
 
-        <button className="btn btn-primary" onClick={handleOpenAdd}>
-          <Plus size={15} />
-          Add Match
-        </button>
+        <div style={{ display: 'flex', gap: '0.6rem' }}>
+          <button className="btn btn-secondary" onClick={() => { setPerformanceMatchId(''); setIsPerformanceOpen(true); }}>
+            <BarChart3 size={15} /> Add Player Stats
+          </button>
+          <button className="btn btn-primary" onClick={handleOpenAdd}>
+            <Plus size={15} /> Add Match
+          </button>
+        </div>
       </div>
 
       {notification && (
@@ -204,6 +217,14 @@ export function Matches() {
         onSubmit={handleFormSubmit}
         initialData={selectedMatch}
         mode={formMode}
+      />
+
+      <MatchPerformanceForm
+        isOpen={isPerformanceOpen}
+        onClose={() => setIsPerformanceOpen(false)}
+        onSubmit={handlePerformanceSubmit}
+        matches={matches}
+        initialMatchId={performanceMatchId}
       />
 
       <ConfirmDialog

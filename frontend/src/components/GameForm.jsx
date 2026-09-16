@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Modal } from './Modal';
 import { initialPlayers } from '../data/mockData';
+import { playerApi } from '../api/playerApi';
 
 export function GameForm({ isOpen, onClose, onSubmit, initialData = null, mode = 'add' }) {
   const [formData, setFormData] = useState({
@@ -14,6 +15,11 @@ export function GameForm({ isOpen, onClose, onSubmit, initialData = null, mode =
 
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
+  const [players, setPlayers] = useState(initialPlayers);
+
+  useEffect(() => {
+    playerApi.getAll().then(setPlayers).catch(() => setPlayers(initialPlayers));
+  }, [isOpen]);
 
   useEffect(() => {
     if (initialData) {
@@ -32,7 +38,7 @@ export function GameForm({ isOpen, onClose, onSubmit, initialData = null, mode =
         Developer: '',
         RDate: '2024-01-01',
         Max_Player: 10,
-        Player_ID: initialPlayers[0]?.Player_ID ?? 1
+        Player_ID: players[0]?.Player_ID ?? initialPlayers[0]?.Player_ID ?? 1
       });
     }
     setErrors({});
@@ -167,9 +173,9 @@ export function GameForm({ isOpen, onClose, onSubmit, initialData = null, mode =
                 value={formData.Player_ID}
                 onChange={handleChange}
               >
-                {initialPlayers.map(p => (
+                {players.map(p => (
                   <option key={p.Player_ID} value={p.Player_ID}>
-                    #{p.Player_ID} - {p.Code} ({p.First} {p.Last})
+                    #{p.Player_ID} - {p.Code} ({p.FullName || `${p.First} ${p.Last}`})
                   </option>
                 ))}
               </select>

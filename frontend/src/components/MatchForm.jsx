@@ -114,7 +114,7 @@ export function MatchForm({ isOpen, onClose, onSubmit, initialData = null, mode 
               <label>Status *</label>
               <select name="Status" className="form-select" value={formData.Status} onChange={handleChange}>
                 <option value="Completed">Completed</option>
-                <option value="In-Progress">In-Progress</option>
+                <option value="Ongoing">Ongoing</option>
                 <option value="Scheduled">Scheduled</option>
               </select>
             </div>

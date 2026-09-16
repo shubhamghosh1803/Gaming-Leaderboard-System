@@ -25,6 +25,15 @@ export const statsApi = {
         totalScore
       };
     }
-    return request('/stats/summary');
+    const summary = await request('/stats/summary');
+    return {
+      totalPlayers: summary.total_players,
+      totalGames: summary.total_games,
+      totalMatches: summary.total_matches,
+      totalTeams: summary.total_teams,
+      totalLeaderboards: summary.total_leaderboards,
+      totalKills: summary.total_kills,
+      totalScore: summary.total_score
+    };
   }
 };

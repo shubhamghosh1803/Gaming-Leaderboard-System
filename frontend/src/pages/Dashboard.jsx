@@ -14,22 +14,32 @@ import {
 import { StatCard } from '../components/StatCard';
 import { statsApi } from '../api/statsApi';
 import { leaderboardApi } from '../api/leaderboardApi';
-import { initialMatches, initialPlayerAchievements, initialPlayers, initialRewards } from '../data/mockData';
+import { matchesApi } from '../api/matchesApi';
+import { achievementsApi } from '../api/achievementsApi';
 
 export function Dashboard({ onNavigate }) {
   const [stats, setStats] = useState(null);
   const [topRankings, setTopRankings] = useState([]);
+  const [recentMatches, setRecentMatches] = useState([]);
+  const [recentAchievements, setRecentAchievements] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadData() {
       try {
-        const [statsData, rankingsData] = await Promise.all([
+        const [statsResult, rankingsResult, matchesResult, achievementsResult] = await Promise.allSettled([
           statsApi.getDashboardSummary(),
-          leaderboardApi.getRankings(1001)
+          leaderboardApi.getRankings(1001),
+          matchesApi.getAll(),
+          achievementsApi.getAll()
         ]);
-        setStats(statsData);
-        setTopRankings(rankingsData.slice(0, 5));
+        if (statsResult.status === 'fulfilled') setStats(statsResult.value);
+        if (rankingsResult.status === 'fulfilled') setTopRankings(rankingsResult.value.slice(0, 5));
+        if (matchesResult.status === 'fulfilled') setRecentMatches(matchesResult.value.slice(0, 4));
+        if (achievementsResult.status === 'fulfilled') setRecentAchievements(achievementsResult.value.slice(0, 4));
+        if (achievementsResult.status === 'rejected') {
+          console.error('Failed to load dashboard achievements:', achievementsResult.reason);
+        }
       } catch (err) {
         console.error('Failed to load dashboard data:', err);
       } finally {
@@ -38,17 +48,6 @@ export function Dashboard({ onNavigate }) {
     }
     loadData();
   }, []);
-
-  // Enriched recent achievements
-  const recentAchievements = initialPlayerAchievements.slice(0, 4).map(ach => {
-    const player = initialPlayers.find(p => p.Player_ID === ach.Player_ID);
-    const reward = initialRewards.find(r => r.Reward_ID === ach.Reward_ID);
-    return {
-      ...ach,
-      Player_Code: player ? player.Code : `Player #${ach.Player_ID}`,
-      Reward_Type: reward ? reward.R_Type : 'Achievement Badge'
-    };
-  });
 
   return (
     <div className="page-container">
@@ -192,7 +191,7 @@ export function Dashboard({ onNavigate }) {
                 </tr>
               </thead>
               <tbody>
-                {initialMatches.map((m) => (
+                {recentMatches.map((m) => (
                   <tr key={m.Match_ID}>
                     <td style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-primary)', fontWeight: 600 }}>
                       #{m.Match_ID}

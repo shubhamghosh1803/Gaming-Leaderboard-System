@@ -18,13 +18,40 @@ function setLocal(key, val) {
   } catch {}
 }
 
+function getStoredPlayers() {
+  return getLocal('gaming_db_players', initialPlayers);
+}
+
 let mockGames = getLocal(STORAGE_KEY, initialGames);
 
 function enrichGame(g) {
-  const featured = initialPlayers.find(p => p.Player_ID === g.Player_ID);
+  const featured = getStoredPlayers().find(p => p.Player_ID === g.Player_ID);
   return {
     ...g,
-    featured_player: featured ? featured.Code : `Player #${g.Player_ID}`
+    G_ID: g.G_ID ?? g.game_id,
+    Name: g.Name ?? g.name ?? '',
+    Developer: g.Developer ?? g.developer ?? '',
+    RDate: g.RDate ?? g.release_date ?? '',
+    Max_Player: g.Max_Player ?? g.max_players ?? '',
+    Player_ID: g.Player_ID ?? g.featured_player_id,
+    featured_player: featured ? featured.Code : `Player #${g.Player_ID ?? g.featured_player_id ?? ''}`
+  };
+}
+
+function normalizeBackendGame(game, players) {
+  const normalized = {
+    ...game,
+    G_ID: game.G_ID ?? game.game_id,
+    Name: game.Name ?? game.name ?? '',
+    Developer: game.Developer ?? game.developer ?? '',
+    RDate: game.RDate ?? game.release_date ?? '',
+    Max_Player: game.Max_Player ?? game.max_players ?? ''
+    ,Player_ID: game.Player_ID ?? game.featured_player_id
+  };
+  const featured = players.find(player => player.Player_ID === normalized.Player_ID);
+  return {
+    ...normalized,
+  featured_player: featured ? featured.Code : `Player #${normalized.Player_ID ?? ''}`
   };
 }
 
@@ -34,7 +61,9 @@ export const gamesApi = {
       await new Promise(r => setTimeout(r, 80));
       return mockGames.map(enrichGame);
     }
-    return request('/games');
+    const games = await request('/games');
+    const players = await request('/players');
+    return games.map(game => normalizeBackendGame(game, players));
   },
 
   async getById(id) {
@@ -45,7 +74,9 @@ export const gamesApi = {
       if (!g) throw new Error(`Game #${id} not found.`);
       return enrichGame(g);
     }
-    return request(`/games/${numId}`);
+    const game = await request(`/games/${numId}`);
+    const players = await request('/players');
+    return normalizeBackendGame(game, players);
   },
 
   async create(data) {
@@ -69,7 +100,15 @@ export const gamesApi = {
     }
     return request('/games', {
       method: 'POST',
-      body: JSON.stringify(data)
+      body: JSON.stringify({
+        game_id: data.G_ID != null ? Number(data.G_ID) : null,
+        name: data.Name,
+        developer: data.Developer,
+        release_date: data.RDate || null,
+        max_players: Number(data.Max_Player),
+        genre: data.Genre || 'General'
+        ,featured_player_id: data.Player_ID != null ? Number(data.Player_ID) : null
+      })
     });
   },
 
@@ -92,7 +131,14 @@ export const gamesApi = {
     }
     return request(`/games/${numId}`, {
       method: 'PUT',
-      body: JSON.stringify(data)
+      body: JSON.stringify({
+        ...(data.Name != null && { name: data.Name }),
+        ...(data.Developer != null && { developer: data.Developer }),
+        ...(data.RDate != null && { release_date: data.RDate }),
+        ...(data.Max_Player != null && { max_players: Number(data.Max_Player) }),
+        ...(data.Genre != null && { genre: data.Genre })
+        ,...(data.Player_ID != null && { featured_player_id: Number(data.Player_ID) })
+      })
     });
   },
 

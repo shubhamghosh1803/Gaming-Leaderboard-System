@@ -18,7 +18,8 @@ CREATE TABLE game (
     release_date DATE,
     max_players INT CHECK (max_players > 0),
     genre VARCHAR(100) NOT NULL,
-    name VARCHAR(150)
+    name VARCHAR(150),
+    featured_player_id INT
 );
 
 CREATE TABLE platform (
@@ -88,7 +89,7 @@ CREATE TABLE casual_player (
 
 CREATE TABLE competitive_player (
     player_id INT PRIMARY KEY,
-    player_rank INT CHECK (player_rank > 0),
+    player_rank VARCHAR(50) NOT NULL,
 
     CONSTRAINT fk_competitive_player
         FOREIGN KEY (player_id)
