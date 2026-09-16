@@ -18,7 +18,7 @@ CREATE TABLE game (
     release_date DATE,
     max_players INT CHECK (max_players > 0),
     genre VARCHAR(100) NOT NULL,
-    name VARCHAR(150),
+    name VARCHAR(150)
 );
 
 CREATE TABLE platform (

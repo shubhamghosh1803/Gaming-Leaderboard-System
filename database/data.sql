@@ -59,7 +59,7 @@ VALUES
 -- =========================================
 
 INSERT INTO reward_type
-    (rtype, expiry_date)
+    (rtype, expirydate)
 VALUES
     ('MVP', '2027-12-31'),
     ('CHAMPION', '2028-12-31'),
@@ -255,3 +255,4 @@ VALUES
     (4, 'shroud.player@leaderboard.com'),
     (5, 'ninja.player@leaderboard.com'),
     (6, 'milan.player@leaderboard.com');
+
