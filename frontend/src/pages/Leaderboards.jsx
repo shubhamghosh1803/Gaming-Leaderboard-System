@@ -7,7 +7,7 @@ import { ConfirmDialog } from '../components/ConfirmDialog';
 
 export function Leaderboards() {
   const [leaderboards, setLeaderboards] = useState([]);
-  const [selectedLId, setSelectedLId] = useState(1001);
+  const [selectedLId, setSelectedLId] = useState(1);
   const [rankings, setRankings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);

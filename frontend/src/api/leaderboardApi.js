@@ -52,7 +52,7 @@ export const leaderboardApi = {
   async getRankings(leaderboardId) {
     if (USE_MOCK) {
       await new Promise(r => setTimeout(r, 120));
-      const lId = Number(leaderboardId) || 1001;
+      const lId = Number(leaderboardId) || 1;
       // Filter Match_Play_Stats associated with this leaderboard
       const stats = initialMatchPlayStats.filter(s => s.L_ID === lId);
       return stats.map(s => {

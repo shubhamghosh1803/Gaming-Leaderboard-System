@@ -24,7 +24,7 @@ function enrichReward(r) {
   const acc = initialAccounts.find(a => a.Acc_ID === r.Acc_ID);
   return {
     ...r,
-    account_email: acc ? acc.Email : `Account #${r.Acc_ID}`
+    account_email: acc ? acc.Email : (r.Acc_ID != null ? `Account #${r.Acc_ID} (deleted)` : 'Unassigned')
   };
 }
 
@@ -40,7 +40,8 @@ export const rewardsApi = {
       Reward_ID: reward.Reward_ID ?? reward.reward_id,
       R_Type: reward.R_Type ?? reward.rtype,
       ExpiryDate: reward.ExpiryDate ?? reward.expiry_date,
-      Acc_ID: reward.Acc_ID ?? reward.acc_id
+      Acc_ID: reward.Acc_ID ?? reward.acc_id,
+      account_email: reward.account_email ?? reward.Account_Email ?? (reward.Acc_ID ?? reward.acc_id != null ? `Account #${reward.Acc_ID ?? reward.acc_id} (deleted)` : 'Unassigned')
     }));
   },
 
@@ -58,7 +59,8 @@ export const rewardsApi = {
       Reward_ID: reward.Reward_ID ?? reward.reward_id,
       R_Type: reward.R_Type ?? reward.rtype,
       ExpiryDate: reward.ExpiryDate ?? reward.expiry_date,
-      Acc_ID: reward.Acc_ID ?? reward.acc_id
+      Acc_ID: reward.Acc_ID ?? reward.acc_id,
+      account_email: reward.account_email ?? reward.Account_Email ?? (reward.Acc_ID ?? reward.acc_id != null ? `Account #${reward.Acc_ID ?? reward.acc_id} (deleted)` : 'Unassigned')
     };
   }
 };

@@ -29,13 +29,13 @@ export function Dashboard({ onNavigate }) {
       try {
         const [statsResult, rankingsResult, matchesResult, achievementsResult] = await Promise.allSettled([
           statsApi.getDashboardSummary(),
-          leaderboardApi.getRankings(1001),
+          leaderboardApi.getRankings(1),
           matchesApi.getAll(),
           achievementsApi.getAll()
         ]);
         if (statsResult.status === 'fulfilled') setStats(statsResult.value);
         if (rankingsResult.status === 'fulfilled') setTopRankings(rankingsResult.value.slice(0, 5));
-        if (matchesResult.status === 'fulfilled') setRecentMatches(matchesResult.value.slice(0, 4));
+        if (matchesResult.status === 'fulfilled') setRecentMatches(matchesResult.value.slice(0, 5));
         if (achievementsResult.status === 'fulfilled') setRecentAchievements(achievementsResult.value.slice(0, 4));
         if (achievementsResult.status === 'rejected') {
           console.error('Failed to load dashboard achievements:', achievementsResult.reason);

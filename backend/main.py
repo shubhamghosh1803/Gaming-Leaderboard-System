@@ -784,10 +784,13 @@ def get_rewards():
                     r.reward_id,
                     r.rtype,
                     r.acc_id,
+                    COALESCE(a.email, 'Account #' || r.acc_id || ' (deleted)') AS account_email,
                     rt.expiry_date AS expiry_date
                 FROM reward r
                 LEFT JOIN reward_type rt
                     ON r.rtype = rt.rtype
+                LEFT JOIN account a
+                    ON a.acc_id = r.acc_id
                 ORDER BY r.reward_id;
             """)
             return cur.fetchall()
@@ -802,10 +805,13 @@ def get_reward(reward_id: int):
                     r.reward_id,
                     r.rtype,
                     r.acc_id,
+                    COALESCE(a.email, 'Account #' || r.acc_id || ' (deleted)') AS account_email,
                     rt.expiry_date AS expiry_date
                 FROM reward r
                 LEFT JOIN reward_type rt
                     ON r.rtype = rt.rtype
+                LEFT JOIN account a
+                    ON a.acc_id = r.acc_id
                 WHERE r.reward_id = %s;
             """, (reward_id,))
 
@@ -1043,7 +1049,7 @@ def get_matches():
                     result,
                     total_matches
                 FROM "match"
-                ORDER BY match_id;
+                ORDER BY match_id DESC;
             """)
             return cur.fetchall()
 
