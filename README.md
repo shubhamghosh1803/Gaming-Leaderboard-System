@@ -2,16 +2,16 @@
 
 This project is a full-stack gaming leaderboard and player statistics application developed for a DBMS coursework assignment. The current implementation includes a PostgreSQL-backed FastAPI backend and a React + Vite frontend dashboard for managing database records and executing SQL queries.
 
-## Team Members and Responsibilities
+## Team Members 
 
 1. Shubham Ghosh - 25BCE5137  
-   Database schema, PostgreSQL integration, backend development
+
 
 2. Arshiya - 25BCE5189  
-   Frontend development and UI
+   
 
 3. Mridu Kurup - 25BCE5123  
-   Backend CRUD operations and integration
+  
 
 ## Project Overview
 
