@@ -1,10 +1,21 @@
+import logging
+
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from typing import Optional, Literal
 from datetime import date
+import psycopg
 from database import get_connection
 from psycopg.errors import ForeignKeyViolation
+from neo4j.exceptions import Neo4jError
+from neo4j_database import (
+    get_graph_summary,
+    get_player_graph,
+)
+from sync_postgres import sync_postgres_to_neo4j
+
+logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Gaming Leaderboard System")
 app.add_middleware(
@@ -133,6 +144,20 @@ class MatchPlayerStatsCreate(BaseModel):
 
 class QueryRequest(BaseModel):
     query: str
+
+
+def sync_graph_after_postgres_write():
+    try:
+        sync_postgres_to_neo4j()
+    except (Neo4jError, psycopg.Error, RuntimeError) as error:
+        logger.exception("PostgreSQL to Neo4j synchronization failed")
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "The PostgreSQL change was saved, but the Neo4j mirror "
+                "could not be synchronized. Retry POST /neo4j/sync."
+            ),
+        ) from error
 
 
 @app.get("/")
@@ -281,7 +306,9 @@ def create_player(player: PlayerCreate):
                     INSERT INTO professional_player (player_id, team_id, salary)
                     VALUES (%s, %s, %s)
                 """, (created["player_id"], player.team_id, player.salary or 0))
-            return created
+
+    sync_graph_after_postgres_write()
+    return created
 
 @app.patch("/players/{player_id}")
 @app.put("/players/{player_id}")
@@ -359,6 +386,7 @@ def update_player(player_id: int, player: PlayerUpdate):
             detail="Player not found"
         )
 
+    sync_graph_after_postgres_write()
     return updated_player
 
 @app.delete("/players/{player_id}")
@@ -378,6 +406,8 @@ def delete_player(player_id: int):
             status_code=404,
             detail="Player not found"
         )
+
+    sync_graph_after_postgres_write()
 
     return {
         "message": "Player deleted successfully",
@@ -463,7 +493,10 @@ def create_game(game: GameCreate):
                 game.featured_player_id
             ))
 
-            return cur.fetchone()
+            created_game = cur.fetchone()
+
+    sync_graph_after_postgres_write()
+    return created_game
 
 @app.patch("/games/{game_id}")
 @app.put("/games/{game_id}")
@@ -524,6 +557,7 @@ def update_game(game_id: int, game: GameUpdate):
             detail="Game not found"
         )
 
+    sync_graph_after_postgres_write()
     return updated_game
 
 @app.delete("/games/{game_id}")
@@ -544,6 +578,7 @@ def delete_game(game_id: int):
             detail="Game not found"
         )
 
+    sync_graph_after_postgres_write()
     return {
         "message": "Game deleted successfully",
         "game_id": deleted_game["game_id"]
@@ -640,7 +675,10 @@ def create_team(team: TeamCreate):
                 country["country_code"]
             ))
 
-            return cur.fetchone()
+            created_team = cur.fetchone()
+
+    sync_graph_after_postgres_write()
+    return created_team
 
 @app.patch("/teams/{team_id}")
 @app.put("/teams/{team_id}")
@@ -702,6 +740,7 @@ def update_team(team_id: int, team: TeamUpdate):
             detail="Team not found"
         )
 
+    sync_graph_after_postgres_write()
     return updated_team
 
 @app.delete("/teams/{team_id}")
@@ -723,6 +762,7 @@ def delete_team(team_id: int):
                 detail="Team not found"
             )
 
+        sync_graph_after_postgres_write()
         return {
             "message": "Team deleted successfully",
             "team_id": deleted_team["team_id"]
@@ -919,7 +959,10 @@ def create_leaderboard(leaderboard: LeaderboardCreate):
                 leaderboard.ranking,
                 leaderboard.total_participant
             ))
-            return cur.fetchone()
+            created_leaderboard = cur.fetchone()
+
+    sync_graph_after_postgres_write()
+    return created_leaderboard
 
 
 @app.put("/leaderboards/{leaderboard_id}")
@@ -945,6 +988,7 @@ def update_leaderboard(leaderboard_id: int, leaderboard: LeaderboardUpdate):
             updated = cur.fetchone()
     if updated is None:
         raise HTTPException(status_code=404, detail="Leaderboard not found")
+    sync_graph_after_postgres_write()
     return updated
 
 
@@ -956,6 +1000,7 @@ def delete_leaderboard(leaderboard_id: int):
             deleted = cur.fetchone()
     if deleted is None:
         raise HTTPException(status_code=404, detail="Leaderboard not found")
+    sync_graph_after_postgres_write()
     return {"message": "Leaderboard deleted successfully", "lb_id": deleted["lb_id"]}
 
 
@@ -1074,7 +1119,10 @@ def create_match_player_stats(stats: MatchPlayerStatsCreate):
                 stats.score, stats.deaths, stats.headshots, stats.kills,
                 stats.assists, kd_ratio
             ))
-            return cur.fetchone()
+            created_stats = cur.fetchone()
+
+    sync_graph_after_postgres_write()
+    return created_stats
 
 
 @app.get("/match-stats/{match_id}")
@@ -1149,7 +1197,10 @@ def create_match(match: MatchCreate):
                 match.total_matches
             ))
 
-            return cur.fetchone()
+            created_match = cur.fetchone()
+
+    sync_graph_after_postgres_write()
+    return created_match
 
 @app.patch("/matches/{match_id}")
 @app.put("/matches/{match_id}")
@@ -1209,6 +1260,7 @@ def update_match(match_id: int, match: MatchUpdate):
             detail="Match not found"
         )
 
+    sync_graph_after_postgres_write()
     return updated_match
 
 @app.delete("/matches/{match_id}")
@@ -1229,6 +1281,7 @@ def delete_match(match_id: int):
             detail="Match not found"
         )
 
+    sync_graph_after_postgres_write()
     return {
         "message": "Match deleted successfully",
         "match_id": deleted_match["match_id"]
@@ -1279,6 +1332,9 @@ def execute_query(request_data: QueryRequest):
             detail="Query cannot be empty."
         )
 
+    statement_keyword = raw_sql.split(None, 1)[0].rstrip(";").upper()
+    should_sync_graph = statement_keyword not in {"SELECT", "SHOW", "EXPLAIN"}
+
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute(raw_sql)
@@ -1291,14 +1347,63 @@ def execute_query(request_data: QueryRequest):
                     for column in cur.description
                 ]
 
-                return {
+                query_result = {
                     "columns": columns,
                     "rows": rows,
                     "rowCount": len(rows)
                 }
+            else:
+                query_result = {
+                    "columns": [],
+                    "rows": [],
+                    "rowCount": cur.rowcount
+                }
 
-            return {
-                "columns": [],
-                "rows": [],
-                "rowCount": cur.rowcount
-            }
+    if should_sync_graph:
+        sync_graph_after_postgres_write()
+
+    return query_result
+
+@app.get("/neo4j/summary")
+def neo4j_summary():
+    try:
+        return get_graph_summary()
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail="Could not retrieve Neo4j graph summary"
+        )
+
+
+@app.post("/neo4j/sync")
+def sync_neo4j_from_postgres():
+    try:
+        return sync_postgres_to_neo4j()
+    except (Neo4jError, psycopg.Error, RuntimeError) as error:
+        logger.exception("PostgreSQL to Neo4j synchronization failed")
+        raise HTTPException(
+            status_code=503,
+            detail="Could not synchronize PostgreSQL data to Neo4j",
+        ) from error
+
+
+@app.get("/neo4j/players/{player_id}/graph")
+def neo4j_player_graph(player_id: int):
+    try:
+        result = get_player_graph(player_id)
+
+        if result is None:
+            raise HTTPException(
+                status_code=404,
+                detail="Player not found in Neo4j"
+            )
+
+        return result
+
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(
+            status_code=500,
+            detail="Could not retrieve player graph from Neo4j"
+        )

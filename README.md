@@ -240,6 +240,20 @@ npm run build
 5. Use the dashboard and management pages to interact with the data.
 6. Use the SQL Console to execute database queries.
 
+## PostgreSQL to Neo4j Snapshot
+
+PostgreSQL remains the source of truth. Once Neo4j connection settings are
+configured in `backend/.env`, start the backend and call `POST /neo4j/sync`
+from `http://localhost:8000/docs` to copy the current relational data and its
+relationships into Neo4j. The import recreates only nodes labeled
+`PostgresMirror`; unrelated Neo4j nodes are left untouched. Account password
+hashes are not copied.
+
+Successful create, update, and delete operations for players, games, teams,
+leaderboards, matches, and match statistics refresh the PostgreSQL mirror.
+Non-read-only statements run through `POST /query` also refresh it. The snapshot
+replaces only `PostgresMirror` nodes, so unrelated Neo4j nodes are preserved.
+
 ## Notes
 
 - This README reflects only features and structure currently present in the repository.

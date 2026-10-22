@@ -216,3 +216,12 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Environment files and secrets
+.env
+backend/.env
+
+# Python virtual environments
+venv/
+.venv/
+backend/venv/
