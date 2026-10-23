@@ -10,6 +10,7 @@ from database import get_connection
 from psycopg.errors import ForeignKeyViolation
 from neo4j.exceptions import Neo4jError
 from neo4j_database import (
+    get_full_graph,
     get_graph_summary,
     get_player_graph,
 )
@@ -1373,6 +1374,18 @@ def neo4j_summary():
             status_code=500,
             detail="Could not retrieve Neo4j graph summary"
         )
+
+
+@app.get("/neo4j/graph")
+def neo4j_full_graph():
+    try:
+        return get_full_graph()
+    except (Neo4jError, RuntimeError) as error:
+        logger.exception("Could not retrieve Neo4j graph")
+        raise HTTPException(
+            status_code=503,
+            detail="Could not retrieve Neo4j graph",
+        ) from error
 
 
 @app.post("/neo4j/sync")

@@ -135,6 +135,49 @@ def get_player_graph(player_id: int):
         }
 
 
+def get_full_graph():
+    query = """
+    MATCH (n:PostgresMirror)
+    OPTIONAL MATCH (n)-[r]->(m:PostgresMirror)
+    RETURN n, r, m
+    """
+
+    nodes = {}
+    relationships = {}
+
+    with get_driver().session(database=DATABASE) as session:
+        for record in session.run(query):
+            source = record["n"]
+            nodes[source.element_id] = {
+                "id": source.element_id,
+                "labels": list(source.labels),
+                "properties": dict(source),
+            }
+
+            target = record["m"]
+            relationship = record["r"]
+            if target is None or relationship is None:
+                continue
+
+            nodes[target.element_id] = {
+                "id": target.element_id,
+                "labels": list(target.labels),
+                "properties": dict(target),
+            }
+            relationships[relationship.element_id] = {
+                "id": relationship.element_id,
+                "source": source.element_id,
+                "target": target.element_id,
+                "type": relationship.type,
+                "properties": dict(relationship),
+            }
+
+    return {
+        "nodes": list(nodes.values()),
+        "relationships": list(relationships.values()),
+    }
+
+
 def get_graph_summary():
     query = """
     MATCH (n:PostgresMirror)
