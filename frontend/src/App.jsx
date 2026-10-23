@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Neo4jExplorer } from './pages/Neo4jExplorer';
 import { Sidebar } from './components/Sidebar';
 import { Navbar } from './components/Navbar';
 import { Dashboard } from './pages/Dashboard';
@@ -18,6 +19,7 @@ export function App() {
 
   const getPageTitle = () => {
     switch (activeTab) {
+      case 'neo4j': return 'Neo4j Explorer';
       case 'dashboard': return 'Dashboard';
       case 'players': return 'Players';
       case 'leaderboards': return 'Leaderboard';
@@ -57,6 +59,7 @@ export function App() {
         {activeTab === 'rewards' && <Rewards />}
         {activeTab === 'platforms' && <Platforms />}
         {activeTab === 'sql-console' && <SqlConsole />}
+        {activeTab === 'neo4j' && <Neo4jExplorer />}
       </main>
     </div>
   );

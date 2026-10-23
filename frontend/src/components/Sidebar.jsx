@@ -9,7 +9,8 @@ import {
   Award,
   Gift,
   Monitor,
-  Terminal
+  Terminal,
+  Network
 } from 'lucide-react';
 
 export function Sidebar({ activeTab, setActiveTab, isOpen, onCloseMobile }) {
@@ -23,7 +24,8 @@ export function Sidebar({ activeTab, setActiveTab, isOpen, onCloseMobile }) {
     { id: 'achievements', label: 'Achievements', icon: Award },
     { id: 'rewards', label: 'Rewards', icon: Gift },
     { id: 'platforms', label: 'Platforms', icon: Monitor },
-    { id: 'sql-console', label: 'SQL Console', icon: Terminal }
+    { id: 'sql-console', label: 'SQL Console', icon: Terminal },
+    { id: 'neo4j', label: 'Neo4j Explorer', icon: Network }
   ];
 
   const handleSelect = (id) => {
